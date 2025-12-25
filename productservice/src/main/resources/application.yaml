@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: productservice
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - metrics
+          - info
+          - beans
