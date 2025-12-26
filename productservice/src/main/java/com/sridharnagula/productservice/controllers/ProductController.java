@@ -4,6 +4,7 @@ import com.sridharnagula.productservice.dtos.CreateProductRequestDTO;
 import com.sridharnagula.productservice.dtos.FakeStoreProductDTO;
 import com.sridharnagula.productservice.models.Product;
 import com.sridharnagula.productservice.services.ProductService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,7 +14,7 @@ public class ProductController {
 
     private ProductService productService;
 
-    public ProductController(ProductService productService){
+    public ProductController(@Qualifier("selfProductService") ProductService productService){
         this.productService = productService;
     }
     @PostMapping("/products")

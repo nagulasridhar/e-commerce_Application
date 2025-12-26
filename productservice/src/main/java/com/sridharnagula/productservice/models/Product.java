@@ -1,5 +1,8 @@
 package com.sridharnagula.productservice.models;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,13 +12,14 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Product {
+@Entity
+public class Product extends BaseModel {
 
-    private Long id;
     private String title;
     private String description;
     private double price;
     private String imageUrl;
+    @ManyToOne(cascade = {CascadeType.PERSIST}) //create a category if a prdouct is created with new category
     private Category category;
 
 }
