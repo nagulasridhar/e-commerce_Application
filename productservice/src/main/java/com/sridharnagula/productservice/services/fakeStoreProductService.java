@@ -1,7 +1,11 @@
 package com.sridharnagula.productservice.services;
 
 import com.sridharnagula.productservice.dtos.FakeStoreProductDTO;
+import com.sridharnagula.productservice.exceptions.ProductNotFoundException;
 import com.sridharnagula.productservice.models.Product;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -18,11 +22,15 @@ public class fakeStoreProductService implements ProductService {
     }
 
     @Override
-    public Product getSingleProduct(Long productid) {
-        FakeStoreProductDTO fakeStoreProduct =  restTemplate.getForObject(
+    public Product getSingleProduct(Long productid) throws ProductNotFoundException{
+        ResponseEntity<FakeStoreProductDTO> fakeStoreProductResponse =  restTemplate.getForEntity(
                 "https://fakestoreapi.com/products/" + productid,
                 FakeStoreProductDTO.class
         );
+        FakeStoreProductDTO fakeStoreProduct = fakeStoreProductResponse.getBody();
+        if(fakeStoreProduct==null){
+            throw new ProductNotFoundException("Product with Id "+ productid + " Cannot be found. Try to change the Id");
+        }
         return fakeStoreProduct.toProduct();
     }
 
@@ -56,12 +64,12 @@ public class fakeStoreProductService implements ProductService {
         }
         return products;
     }
-    public String updateProduct(Long id,
+    public Product updateProduct(Long id,
                                  String title,
                                  String description,
                                  String category,
                                  double price,
-                                 String image){
+                                 String image) throws ProductNotFoundException{
         ArrayList<Product> products = (ArrayList<Product>) getProducts();
         FakeStoreProductDTO fakeStoreProductDTO = new FakeStoreProductDTO();
         fakeStoreProductDTO.setTitle(title);
@@ -75,35 +83,41 @@ public class fakeStoreProductService implements ProductService {
                 productFound = true;
             }
         }
-        if(productFound){
-            restTemplate.put("https://fakestoreapi.com/products/"+id,
-                    fakeStoreProductDTO // request Body
-                     // data type of response
-            );
-            return "Product Updated";
+        if(productFound!=false){
+            throw new ProductNotFoundException("Product id: "+id+ "is not found");
         }
-        FakeStoreProductDTO response = restTemplate.postForObject("https://fakestoreapi.com/products",
-                fakeStoreProductDTO, // request Body
+        //put method cannot give a response so we can use exchange method
+        ResponseEntity<FakeStoreProductDTO> response = restTemplate.exchange("https://fakestoreapi.com/products/"+id,
+                HttpMethod.PUT,
+                new HttpEntity<>(fakeStoreProductDTO),
                 FakeStoreProductDTO.class // data type of response
         );
-
-
-        return "No ProductId found. So created a New Product";
+        return response.getBody().toProduct();
     }
 
     @Override
-    public List<Product> getProductsByCategory(String category) {
+    public List<Product> getProductsByCategory(String category) throws ProductNotFoundException {
         FakeStoreProductDTO[] productArray = restTemplate.getForObject("https://fakestoreapi.com/products/category/"+ category,
                 FakeStoreProductDTO[].class);
         List<Product> categoryProducts = new ArrayList<>();
         for(FakeStoreProductDTO productDto : productArray){
             categoryProducts.add(productDto.toProduct());
         }
+        if(categoryProducts.size()==0){
+            throw new ProductNotFoundException("Cannot find the Products with the category: "+ category);
+        }
         return categoryProducts;
     }
 
     @Override
-    public String deleteProduct(Long productId) {
+    public Product patchProduct(Long productId, String title, String description, String category, double price, String image) throws ProductNotFoundException {
+        Product product = getSingleProduct(productId);
+
+        return null;
+    }
+
+    @Override
+    public String deleteProduct(Long productId) throws ProductNotFoundException{
         ArrayList<Product> products = (ArrayList<Product>) getProducts();
         boolean productfound = false;
         for(Product p :products){
@@ -113,9 +127,9 @@ public class fakeStoreProductService implements ProductService {
                 break;
             }
         }
-        if(productfound) {
-            return "Deleted Successfully";
+        if(productfound==false) {
+            throw new ProductNotFoundException("Cannot find the id:"+productId+" which you would like to delete");
         }
-        return "Product not found";
+        return "Product is deleted";
     }
 }
