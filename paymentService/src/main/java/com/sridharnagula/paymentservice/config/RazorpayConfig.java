@@ -8,8 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RazorpayConfig {
-    @Value("${razorpay.key.id}") //this value we get it from Application.Properties
-                                 // and will update the variables with value given in properties file
+    @Value("${razorpay.key.id}")
     private String razorpayKeyId;
     @Value("${razorpay.key.secret}")
     private String razorpayKeySecret;

@@ -1,9 +1,11 @@
 package com.sridharnagula.paymentservice.controller;
 
-import com.razorpay.RazorpayException;
 import com.sridharnagula.paymentservice.dto.InitiatePaymentTRequestDTO;
-import com.sridharnagula.paymentservice.service.strategy.PaymentGatewaySelectionStrategy;
+import com.sridharnagula.paymentservice.dto.PaymentResponse;
+import com.sridharnagula.paymentservice.exceptions.PaymentGatewayException;
 import com.sridharnagula.paymentservice.service.PaymentService;
+import com.sridharnagula.paymentservice.service.strategy.PaymentGatewaySelectionStrategy;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,9 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentController {
 
     //@Autowired It is called Field Injection - not required if you do Constructor Injection
-    private PaymentService razorpayPaymentService;
-    private PaymentService stripePaymentService;
-    private PaymentGatewaySelectionStrategy paymentGatewaySelectionStrategy;
+    private final PaymentService razorpayPaymentService;
+    private final PaymentService stripePaymentService;
+    private final PaymentGatewaySelectionStrategy paymentGatewaySelectionStrategy;
 
     public PaymentController(@Qualifier("stripe") PaymentService stripePaymentService,
                              @Qualifier("razorpay") PaymentService razorpayPaymentService,
@@ -31,22 +33,15 @@ public class PaymentController {
 //    }
 
     @PostMapping("/payment")
-    public String initiatePayment(@RequestBody InitiatePaymentTRequestDTO requestDto) throws RazorpayException {
-        int paymentGatewayOption = choosePaymentGateway();
-        switch (paymentGatewayOption){
-            case 1 : return razorpayPaymentService.doPayment(
-                    requestDto.getEmial(),
-                    requestDto.getPhoneNumber(),
-                    requestDto.getAmount(),
-                    requestDto.getOrderId());
-            case 2 : return stripePaymentService.doPayment(
-                    requestDto.getEmial(),
-                    requestDto.getPhoneNumber(),
-                    requestDto.getAmount(),
-                    requestDto.getOrderId());
-        }
-        return null;
+    public PaymentResponse initiatePayment(@Valid @RequestBody InitiatePaymentTRequestDTO requestDto) throws PaymentGatewayException {
+        PaymentService gateway = choosePaymentGateway() == 1 ? razorpayPaymentService : stripePaymentService;
+        return gateway.doPayment(
+                requestDto.getEmial(),
+                requestDto.getPhoneNumber(),
+                requestDto.getAmount(),
+                requestDto.getOrderId());
     }
+
     private int choosePaymentGateway(){
         return paymentGatewaySelectionStrategy.paymentGatewaySelection();
     }
