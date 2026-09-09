@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalogservice
+  namespace: ecommerce
+  labels: { app: catalogservice }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: catalogservice }
+  template:
+    metadata:
+      labels: { app: catalogservice }
+    spec:
+      containers:
+        - name: catalogservice
+          image: ecommerce/catalogservice:latest   # built from ./productservice/Dockerfile
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef: { name: otel-config }
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: catalogservice
+            - name: CATALOG_DB_HOST
+              value: postgres-catalog
+            - name: CATALOG_DB_PORT
+              value: "5432"
+            - name: CATALOG_DB_USER
+              valueFrom: { secretKeyRef: { name: db-credentials, key: CATALOG_DB_USER } }
+            - name: CATALOG_DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: db-credentials, key: CATALOG_DB_PASSWORD } }
+          resources:
+            requests: { cpu: 150m, memory: 384Mi }
+            limits: { cpu: 500m, memory: 768Mi }
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8080 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: 8080 }
+            initialDelaySeconds: 30
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalogservice
+  namespace: ecommerce
+spec:
+  selector: { app: catalogservice }
+  ports:
+    - port: 8080
+      targetPort: 8080
