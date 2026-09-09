@@ -1,11 +1,12 @@
 package com.sridharnagula.productservice.controllers;
 
 import com.sridharnagula.productservice.dtos.CreateProductRequestDTO;
-import com.sridharnagula.productservice.dtos.FakeStoreProductDTO;
+import com.sridharnagula.productservice.dtos.PatchProductRequestDTO;
 import com.sridharnagula.productservice.dtos.UpdateProductRequestDTO;
 import com.sridharnagula.productservice.exceptions.ProductNotFoundException;
 import com.sridharnagula.productservice.models.Product;
 import com.sridharnagula.productservice.services.ProductService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,15 +20,16 @@ public class ProductController {
     public ProductController(@Qualifier("selfProductService") ProductService productService){
         this.productService = productService;
     }
+
     @PostMapping("/products")
-    public Product createproduct(@RequestBody CreateProductRequestDTO request){
-         return  productService.createProduct(
-                 request.getTitle(),
-                 request.getDescription(),
-                 request.getCategory(),
-                 request.getPrice(),
-                 request.getImage()
-         );
+    public Product createproduct(@Valid @RequestBody CreateProductRequestDTO request){
+        return  productService.createProduct(
+                request.getTitle(),
+                request.getDescription(),
+                request.getCategory(),
+                request.getPrice(),
+                request.getImage()
+        );
     }
 
     @GetMapping("/products")
@@ -51,7 +53,7 @@ public class ProductController {
     }
 
     @PutMapping("/products/{id}")
-    public Product  updateProduct(@PathVariable("id") Long productId, @RequestBody CreateProductRequestDTO request) throws ProductNotFoundException{
+    public Product updateProduct(@PathVariable("id") Long productId, @Valid @RequestBody UpdateProductRequestDTO request) throws ProductNotFoundException{
         return productService.updateProduct(
                 productId,
                 request.getTitle(),
@@ -61,8 +63,9 @@ public class ProductController {
                 request.getImage()
         );
     }
+
     @PatchMapping("/products/{id}")
-    public Product patchProduct(@PathVariable("id") Long productId, @RequestBody CreateProductRequestDTO request) throws ProductNotFoundException{
+    public Product patchProduct(@PathVariable("id") Long productId, @Valid @RequestBody PatchProductRequestDTO request) throws ProductNotFoundException{
         return productService.patchProduct(
                 productId,
                 request.getTitle(),
@@ -71,5 +74,5 @@ public class ProductController {
                 request.getPrice(),
                 request.getImage()
         );
-    };
+    }
 }

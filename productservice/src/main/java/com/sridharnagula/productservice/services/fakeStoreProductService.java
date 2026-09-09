@@ -11,6 +11,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service("fakeStoreProductService")
 public class fakeStoreProductService implements ProductService {
@@ -49,7 +50,7 @@ public class fakeStoreProductService implements ProductService {
         FakeStoreProductDTO response = restTemplate.postForObject("https://fakestoreapi.com/products",
                 fakeStoreProductDTO, // request Body
                 FakeStoreProductDTO.class // data type of response
-                );
+        );
         return response.toProduct();
     }
 
@@ -64,28 +65,26 @@ public class fakeStoreProductService implements ProductService {
         }
         return products;
     }
+
+    @Override
     public Product updateProduct(Long id,
                                  String title,
                                  String description,
                                  String category,
                                  double price,
                                  String image) throws ProductNotFoundException{
-        ArrayList<Product> products = (ArrayList<Product>) getProducts();
+        boolean productFound = getProducts().stream().anyMatch(p -> Objects.equals(p.getId(), id));
+        if(!productFound){
+            throw new ProductNotFoundException("Product id: "+id+" is not found");
+        }
+
         FakeStoreProductDTO fakeStoreProductDTO = new FakeStoreProductDTO();
         fakeStoreProductDTO.setTitle(title);
         fakeStoreProductDTO.setCategory(category);
         fakeStoreProductDTO.setDescription(description);
         fakeStoreProductDTO.setPrice(price);
         fakeStoreProductDTO.setImage(image);
-        boolean productFound = false;
-        for(Product p :products){
-            if(p.getId()==id){
-                productFound = true;
-            }
-        }
-        if(productFound!=false){
-            throw new ProductNotFoundException("Product id: "+id+ "is not found");
-        }
+
         //put method cannot give a response so we can use exchange method
         ResponseEntity<FakeStoreProductDTO> response = restTemplate.exchange("https://fakestoreapi.com/products/"+id,
                 HttpMethod.PUT,
@@ -110,26 +109,29 @@ public class fakeStoreProductService implements ProductService {
     }
 
     @Override
-    public Product patchProduct(Long productId, String title, String description, String category, double price, String image) throws ProductNotFoundException {
-        Product product = getSingleProduct(productId);
+    public Product patchProduct(Long productId, String title, String description, String category, Double price, String image) throws ProductNotFoundException {
+        Product existing = getSingleProduct(productId);
 
-        return null;
+        FakeStoreProductDTO patchDto = new FakeStoreProductDTO();
+        patchDto.setTitle(title != null ? title : existing.getTitle());
+        patchDto.setDescription(description != null ? description : existing.getDescription());
+        patchDto.setCategory(category != null ? category : existing.getCategory().getTitle());
+        patchDto.setPrice(price != null ? price : existing.getPrice());
+        patchDto.setImage(image != null ? image : existing.getImageUrl());
+
+        ResponseEntity<FakeStoreProductDTO> response = restTemplate.exchange(
+                "https://fakestoreapi.com/products/" + productId,
+                HttpMethod.PUT,
+                new HttpEntity<>(patchDto),
+                FakeStoreProductDTO.class
+        );
+        return response.getBody().toProduct();
     }
 
     @Override
     public String deleteProduct(Long productId) throws ProductNotFoundException{
-        ArrayList<Product> products = (ArrayList<Product>) getProducts();
-        boolean productfound = false;
-        for(Product p :products){
-            if(p.getId()==productId){
-                products.remove(productId);
-                productfound=true;
-                break;
-            }
-        }
-        if(productfound==false) {
-            throw new ProductNotFoundException("Cannot find the id:"+productId+" which you would like to delete");
-        }
+        getSingleProduct(productId);
+        restTemplate.delete("https://fakestoreapi.com/products/" + productId);
         return "Product is deleted";
     }
 }
