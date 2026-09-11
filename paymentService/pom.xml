@@ -56,6 +56,36 @@
             <artifactId>razorpay-java</artifactId>
             <version>1.4.8</version>
         </dependency>
+
+        <!-- Stripe is the second payment gateway PaymentGatewaySelectionStrategy can pick -
+             previously StripePaymentServiceImpl was a stub that always returned null. -->
+        <dependency>
+            <groupId>com.stripe</groupId>
+            <artifactId>stripe-java</artifactId>
+            <version>29.1.0</version>
+        </dependency>
+
+        <!-- Bean Validation for InitiatePaymentTRequestDTO (@Valid on the controller). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Actuator gives this service health/metrics endpoints, matching userservice,
+             orderservice and productservice - needed for k8s liveness/readiness probes
+             and for the Micrometer->OTel metrics bridge the java agent picks up. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- OpenTelemetry API only - the java agent (Dockerfile) supplies the SDK and
+             OTLP exporters; this just lets application code add custom spans. -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+            <version>1.44.1</version>
+        </dependency>
     </dependencies>
 
     <build>

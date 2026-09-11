@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: orderservice
+
+  datasource:
+    url: jdbc:postgresql://${ORDER_DB_HOST:localhost}:${ORDER_DB_PORT:5435}/orderService
+    username: ${ORDER_DB_USER:orderServiceUser}
+    password: ${ORDER_DB_PASSWORD:StrongPassword123}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 8082
+
+# Base URLs for the services this service orchestrates calls to. In docker-compose
+# these resolve via Docker's embedded DNS (the compose service name); in Kubernetes
+# they resolve via the ClusterIP Service name - same env vars, different values per
+# environment (see docker-compose.yml / k8s/*.yaml).
+services:
+  user-service-url: ${USERSERVICE_URL:http://localhost:8081}
+  catalog-service-url: ${CATALOGSERVICE_URL:http://localhost:8080}
+  payment-service-url: ${PAYMENTSERVICE_URL:http://localhost:8083}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - metrics
+          - info
+          - prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always

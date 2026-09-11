@@ -1,8 +1,8 @@
 package com.sridharnagula.paymentservice.service;
 
-import com.razorpay.RazorpayException;
 import com.sridharnagula.paymentservice.dto.PaymentResponse;
+import com.sridharnagula.paymentservice.exceptions.PaymentGatewayException;
 
 public interface PaymentService {
-    String  doPayment(String email,String phone, Long amount,String orderId) throws RazorpayException;
+    PaymentResponse doPayment(String email, String phone, Long amount, String orderId) throws PaymentGatewayException;
 }

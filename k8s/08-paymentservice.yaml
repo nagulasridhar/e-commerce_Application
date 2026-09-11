@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paymentservice
+  namespace: ecommerce
+  labels: { app: paymentservice }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: paymentservice }
+  template:
+    metadata:
+      labels: { app: paymentservice }
+    spec:
+      containers:
+        - name: paymentservice
+          image: ecommerce/paymentservice:latest   # built from ./paymentService/Dockerfile
+          ports:
+            - containerPort: 8083
+          envFrom:
+            - configMapRef: { name: otel-config }
+          env:
+            - name: RAZORPAY_KEY_ID
+              valueFrom: { secretKeyRef: { name: db-credentials, key: RAZORPAY_KEY_ID } }
+            - name: RAZORPAY_KEY_SECRET
+              valueFrom: { secretKeyRef: { name: db-credentials, key: RAZORPAY_KEY_SECRET } }
+            - name: RAZORPAY_WEBHOOK_SECRET
+              valueFrom: { secretKeyRef: { name: db-credentials, key: RAZORPAY_WEBHOOK_SECRET } }
+            - name: STRIPE_SECRET_KEY
+              valueFrom: { secretKeyRef: { name: db-credentials, key: STRIPE_SECRET_KEY } }
+            - name: STRIPE_WEBHOOK_SECRET
+              valueFrom: { secretKeyRef: { name: db-credentials, key: STRIPE_WEBHOOK_SECRET } }
+            - name: CALLBACK_BASE_URL
+              value: "http://paymentservice.ecommerce.svc.cluster.local:8083"
+          resources:
+            requests: { cpu: 150m, memory: 384Mi }
+            limits: { cpu: 500m, memory: 768Mi }
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8083 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: 8083 }
+            initialDelaySeconds: 30
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: paymentservice
+  namespace: ecommerce
+spec:
+  selector: { app: paymentservice }
+  ports:
+    - port: 8083
+      targetPort: 8083

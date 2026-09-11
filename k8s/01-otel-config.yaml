@@ -1,0 +1,13 @@
+# Non-secret OTel settings shared by all four app Deployments. The SigNoz Helm
+# chart (see README) creates a Service named "signoz-otel-collector" in the
+# "platform" namespace by default - update OTEL_EXPORTER_OTLP_ENDPOINT below if
+# you installed it elsewhere.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-config
+  namespace: ecommerce
+data:
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://signoz-otel-collector.platform.svc.cluster.local:4318"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  OTEL_RESOURCE_ATTRIBUTES: "service.namespace=ecommerce,deployment.environment=kubernetes"

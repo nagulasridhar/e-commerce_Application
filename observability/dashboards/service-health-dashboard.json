@@ -1,0 +1,74 @@
+{
+  "title": "E-Commerce Platform - Service Health",
+  "description": "Starter dashboard for the User/Catalog/Order/Payment services. Import via SigNoz UI: Dashboards -> New Dashboard -> Import JSON. Panel queries use the OTLP metrics the opentelemetry-javaagent + Micrometer emit (http.server.duration and the actuator-derived http_server_requests_seconds series) - adjust metric/attribute names if they differ on your collector build.",
+  "tags": ["ecommerce", "otel", "starter"],
+  "variables": {
+    "service_name": {
+      "type": "QUERY",
+      "description": "Filter every panel to one service",
+      "queryValue": "SELECT DISTINCT service_name FROM signoz_metrics",
+      "defaultValue": "*",
+      "multiSelect": true,
+      "showALLOption": true
+    }
+  },
+  "widgets": [
+    {
+      "title": "Request Latency (p50 / p95 / p99)",
+      "description": "Server-side request duration percentiles, per service.",
+      "panelType": "graph",
+      "queries": [
+        { "legend": "p50 - {{service_name}}", "aggregation": "p50", "metric": "http_server_duration", "groupBy": ["service_name", "http_route"] },
+        { "legend": "p95 - {{service_name}}", "aggregation": "p95", "metric": "http_server_duration", "groupBy": ["service_name", "http_route"] },
+        { "legend": "p99 - {{service_name}}", "aggregation": "p99", "metric": "http_server_duration", "groupBy": ["service_name", "http_route"] }
+      ]
+    },
+    {
+      "title": "Throughput (requests / sec)",
+      "description": "Inbound request rate per service and route.",
+      "panelType": "graph",
+      "queries": [
+        { "legend": "{{service_name}} {{http_route}}", "aggregation": "rate", "metric": "http_server_duration_count", "groupBy": ["service_name", "http_route"] }
+      ]
+    },
+    {
+      "title": "Error Rate (%)",
+      "description": "Share of requests with a 5xx (or exception) status, per service.",
+      "panelType": "graph",
+      "queries": [
+        {
+          "legend": "{{service_name}} error %",
+          "aggregation": "rate",
+          "metric": "http_server_duration_count",
+          "filter": "http_status_code >= 500",
+          "groupBy": ["service_name"],
+          "formula": "(errors / total) * 100"
+        }
+      ]
+    },
+    {
+      "title": "Service Health / Uptime",
+      "description": "Actuator liveness state per service, backed by k8s probe results or the /actuator/health endpoint scraped into SigNoz.",
+      "panelType": "table",
+      "queries": [
+        { "legend": "{{service_name}}", "aggregation": "last", "metric": "up", "groupBy": ["service_name"] }
+      ]
+    },
+    {
+      "title": "Downstream Call Latency (Order -> User / Catalog / Payment)",
+      "description": "Client-span duration for orderservice's outbound calls - the panel that shows which downstream dependency is dragging down checkout latency.",
+      "panelType": "graph",
+      "queries": [
+        { "legend": "{{peer_service}}", "aggregation": "p95", "metric": "http_client_duration", "filter": "service_name = 'orderservice'", "groupBy": ["peer_service"] }
+      ]
+    },
+    {
+      "title": "JVM Heap Usage",
+      "description": "Runtime metrics captured automatically by the java agent, per service.",
+      "panelType": "graph",
+      "queries": [
+        { "legend": "{{service_name}}", "aggregation": "avg", "metric": "process_runtime_jvm_memory_usage", "filter": "type = 'heap'", "groupBy": ["service_name"] }
+      ]
+    }
+  ]
+}
